@@ -1,102 +1,83 @@
-import os
 from typing import Dict, List
 
-import streamlit as st
+import pandas as pd
+from langchain_openai import OpenAIEmbeddings
 from langchain.schema import Document
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
-
-from .data_processor import QAData
-
-
-@st.cache_resource
-def get_embeddings():
-    return OpenAIEmbeddings(model="text-embedding-ada-002")
 
 
 class VectorStore:
-    """FAISS 벡터 저장소 관리 클래스"""
-
-    VECTOR_STORE_PATH = "vector_store"  # 벡터 저장소 저장 경로
-
-    def __init__(self):
-        """OpenAI 임베딩 모델과 FAISS 벡터 저장소 초기화"""
-        self.embeddings = get_embeddings()
-        self.vector_store = None
-        self._load_or_create_store()
-
-    def _load_or_create_store(self) -> None:
-        """벡터 저장소를 로드하거나 없는 경우 생성"""
-        if os.path.exists(self.VECTOR_STORE_PATH):
-            try:
-                print("기존 벡터 저장소를 로드합니다.")
-                self.vector_store = FAISS.load_local(
-                    self.VECTOR_STORE_PATH, self.embeddings
-                )
-            except Exception as e:
-                print(f"벡터 저장소 로드 중 오류 발생: {str(e)}")
-                self.vector_store = None
-
-    def create_vector_store(self, qa_data: List[QAData]) -> None:
-        """QA 데이터로부터 벡터 저장소 생성 및 저장
-
-        Args:
-            qa_data: QAData 객체 리스트
+    def __init__(self, embeddings: OpenAIEmbeddings):
         """
-        # 이미 벡터 저장소가 있으면 생성하지 않음
-        if self.vector_store is not None:
-            print("벡터 저장소가 이미 존재합니다.")
-            return
-
-        print("새로운 벡터 저장소를 생성합니다.")
-        documents = [
-            Document(
-                page_content=f"질문: {qa.question}\n답변: {qa.answer}",
-                metadata={"question": qa.question, "answer": qa.answer},
-            )
-            for qa in qa_data
-        ]
-
-        self.vector_store = FAISS.from_documents(
-            documents=documents, embedding=self.embeddings
-        )
-
-        # 벡터 저장소를 로컬에 저장
-        self.save_vector_store()
-
-    def save_vector_store(self) -> None:
-        """벡터 저장소를 로컬에 저장"""
-        if self.vector_store:
-            os.makedirs(self.VECTOR_STORE_PATH, exist_ok=True)
-            self.vector_store.save_local(self.VECTOR_STORE_PATH)
-            print("벡터 저장소가 저장되었습니다.")
-
-    def find_similar_qa(self, query: str, k: int = 3) -> List[Dict]:
-        """쿼리와 유사한 QA 쌍을 검색
+        벡터 스토어 초기화
 
         Args:
-            query: 검색 쿼리
-            k: 반환할 결과 수
+            embeddings: OpenAI 임베딩 모델
+        """
+        self.embeddings = embeddings
+        self.vectorstore = None
 
+    def create_vectorstore(self, df: pd.DataFrame) -> FAISS:
+        """
+        DataFrame으로부터 FAISS 벡터 스토어 생성
+
+        Args:
+            df: 전처리된 DataFrame (question_title, question_link, clean_answer 포함)
         Returns:
-            유사한 QA 쌍 리스트
+            FAISS 벡터 스토어
         """
-        if not self.vector_store:
-            raise ValueError("Vector store has not been initialized")
+        documents = []
 
-        results = self.vector_store.similarity_search_with_score(
-            query, k=k, score_threshold=0.8  # 유사도 임계값 추가
-        )
+        for idx, row in df.iterrows():
+            # 검색을 위한 텍스트는 질문과 답변을 결합
+            text_content = f"{row['question_title']}\n{row['clean_answer']}"
 
-        # 중복 제거를 위한 딕셔너리
-        unique_results = {}
-        for doc, score in results:
-            question = doc.metadata["question"]
-            if question not in unique_results:
-                unique_results[question] = {
-                    "question": question,
-                    "answer": doc.metadata["answer"],
-                    "similarity_score": score,
+            # 메타데이터에 모든 필요한 정보 저장
+            metadata = {
+                "question_title": row["question_title"],
+                "clean_answer": row["clean_answer"],
+                "question_link": row["question_link"],
+            }
+
+            doc = Document(page_content=text_content, metadata=metadata)
+            documents.append(doc)
+
+        self.vectorstore = FAISS.from_documents(documents, self.embeddings)
+        return self.vectorstore
+
+    def get_similar_questions(self, query: str, k: int = 3) -> List[Dict]:
+        """
+        유사한 질문 검색 및 결과 포맷팅
+
+        Args:
+            query: 사용자 질문
+            k: 반환할 결과 수
+        Returns:
+            유사 질문, 답변, 링크를 포함한 결과 리스트
+        """
+        if not self.vectorstore:
+            raise ValueError("Vector store가 초기화되지 않았습니다.")
+
+        docs = self.vectorstore.similarity_search(query, k=k)
+        results = []
+
+        for doc in docs:
+            results.append(
+                {
+                    "question": doc.metadata["question_title"],
+                    "answer": doc.metadata["clean_answer"],
+                    "link": doc.metadata["question_link"],
                 }
+            )
 
-        return list(unique_results.values())[:k]
+        return results
+
+    def save_vectorstore(self, path: str):
+        """벡터 스토어를 로컬에 저장"""
+        if self.vectorstore:
+            self.vectorstore.save_local(path)
+
+    def load_vectorstore(self, path: str) -> FAISS:
+        """로컬에서 벡터 스토어 로드"""
+        self.vectorstore = FAISS.load_local(path, self.embeddings)
+        return self.vectorstore
