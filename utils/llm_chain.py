@@ -1,10 +1,11 @@
-from langchain_openai import ChatOpenAI
+from typing import Dict, List
+
 from langchain.prompts import ChatPromptTemplate
-from typing import List, Dict
+from langchain_openai import ChatOpenAI
 
 
 class LLMChain:
-    def __init__(self, model: str = "gpt-3.5-turbo"):
+    def __init__(self, model: str = "gpt-4o-mini"):
         """
         LLM 체인 초기화
 
@@ -12,8 +13,8 @@ class LLMChain:
             model: 사용할 OpenAI 모델명
         """
         self.llm = ChatOpenAI(model=model)
-        self.prompt = ChatPromptTemplate.from_template(
-            """
+        self.prompts = {
+            "c#": """
             You are a C# expert. Please provide clear and practical answers to the following questions.
             
             Question: {question}
@@ -21,23 +22,52 @@ class LLMChain:
             Good stackoverflow answers:
             {context}
             
-            Please keep the following in mind when answering
-            1. include code examples if you have them
-            2. clearly explain key concepts
-            3. mention best practices whenever possible
-            4. state any caveats or limitations you may have
+            Please keep the following in mind when answering:
+            1. Focus on C# best practices and modern approaches
+            2. Include code examples using C# syntax
+            3. Mention any .NET specific considerations
+            4. All answers should be in Korean
+            """,
+            "javascript": """
+            You are a JavaScript expert. Please provide clear and practical answers to the following questions.
             
-            All answers should be in Korean.
-            """
-        )
+            Question: {question}
+            
+            Good stackoverflow answers:
+            {context}
+            
+            Please keep the following in mind when answering:
+            1. Focus on modern JavaScript features and best practices
+            2. Include code examples using JavaScript syntax
+            3. Mention browser compatibility when relevant
+            4. All answers should be in Korean
+            """,
+            "java": """
+            You are a Java expert. Please provide clear and practical answers to the following questions.
+            
+            Question: {question}
+            
+            Good stackoverflow answers:
+            {context}
+            
+            Please keep the following in mind when answering:
+            1. Focus on Java best practices and modern approaches
+            2. Include code examples using Java syntax
+            3. Mention JVM considerations when relevant
+            4. All answers should be in Korean
+            """,
+        }
 
-    def generate_response(self, question: str, similar_results: List[Dict]) -> str:
+    def generate_response(
+        self, question: str, similar_results: List[Dict], language: str
+    ) -> str:
         """
         LLM 응답 생성
 
         Args:
             question: 사용자 질문
             similar_results: 유사한 질문/답변 목록
+            language: 프로그래밍 언어
         Returns:
             LLM이 생성한 답변
         """
@@ -49,8 +79,11 @@ class LLMChain:
             ]
         )
 
+        # 언어별 프롬프트 선택
+        prompt = ChatPromptTemplate.from_template(self.prompts[language])
+
         # 프롬프트 생성 및 LLM 호출
-        chain = self.prompt | self.llm
+        chain = prompt | self.llm
 
         try:
             response = chain.invoke({"question": question, "context": context})

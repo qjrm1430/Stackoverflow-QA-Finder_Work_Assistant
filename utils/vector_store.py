@@ -1,9 +1,9 @@
 from typing import Dict, List
 
 import pandas as pd
-from langchain_openai import OpenAIEmbeddings
 from langchain.schema import Document
 from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
 
 
 class VectorStore:
@@ -79,5 +79,9 @@ class VectorStore:
 
     def load_vectorstore(self, path: str) -> FAISS:
         """로컬에서 벡터 스토어 로드"""
-        self.vectorstore = FAISS.load_local(path, self.embeddings)
+        self.vectorstore = FAISS.load_local(
+            path,
+            self.embeddings,
+            allow_dangerous_deserialization=True,  # 신뢰할 수 있는 로컬 데이터에 대해서만 사용
+        )
         return self.vectorstore
