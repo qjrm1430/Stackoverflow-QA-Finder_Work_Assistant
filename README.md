@@ -59,15 +59,18 @@
 ![image](https://github.com/user-attachments/assets/f859e839-c8f7-41ad-b852-dcfaa1517cb9)
 
 ### Pre-Retriever (HyDE)
+![image](https://github.com/user-attachments/assets/68353461-1c18-457d-a402-8ecdbba44b42)
 - 사용자 query를 Vector DB와 같은 지식 검색소 검색 전, LLM에 주입하여 가상의 답변을 얻고,query 대신 가상 답변으로 검색하여 Context를 얻는 기술
 - 가상 답변은 query 대비, 풍부한 정보를 담고 있어 지식 검색 시, 더 많은 정보를 담은 context를 얻을 수 있다.
 - 해당 프로젝트에서도 LLM에 주입하여 답변을 생성시킨 다음 가상 답변으로 검색하여 Context를 얻는다.
 
 ### Post-Retriever (Re-Ranking)
+![image](https://github.com/user-attachments/assets/f8dcb46a-8a31-4f39-b8f8-6127aec96c39)
 - 검색된 정보를 재순위하여 가장 관련성 높은 답변을 우선시하는 것.
 - 원래는 검색된 청크를 재정렬하고 Top-K 가장 관련성 높은 청크를 식별하여 LLM에 사용할 컨텍스트로 제공한다.
 - 해당 프로젝트에서는 청크가 아닌 여러개의 질문(청크)을 뽑은 후 가장 유사도가 높은 질문 순으로 식별하여 LLM에게 컨텍스트로 제공한다.
 
-## Re-Traing
+## Re-Traing (Hidden Multi-Turn)
+![image](https://github.com/user-attachments/assets/c4b67128-a9bc-47cb-94f2-c08d75029811)
 - RAG 평가지표를 바탕으로 프롬프트를 증강시키는 방식을 고려
-- 실험-검증 과정에서 보이듯 일부 결과에서 성능 개선이 이루어지는 것을 일부 확인
+- 일부 결과에서 성능 개선이 이루어지는 것을 일부 확인
