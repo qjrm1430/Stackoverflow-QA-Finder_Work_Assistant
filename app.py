@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
 
 from utils.data_loader import load_stackoverflow_data
+from utils.evaluation import QAEvaluator
 from utils.llm_chain import LLMChain
 from utils.vector_store import VectorStore
 
@@ -78,41 +79,77 @@ def display_results(user_question: str, similar_results: List[Dict], llm_answer:
 
 def main():
     st.set_page_config(page_title="프로그래밍 Q&A 챗봇", page_icon="💻", layout="wide")
-    st.title("프로그래밍 Q&A 챗봇 🤖")
+
+    # 탭 생성
+    tab1, tab2 = st.tabs(["챗봇", "시스템 평가"])
 
     # 컴포넌트 초기화
     vector_stores = initialize_vector_stores()
     llm_chain = LLMChain()
+    evaluator = QAEvaluator()
 
-    # 사이드바에 설명 추가
-    with st.sidebar:
-        st.markdown(
-            """
-            ### 사용 방법
-            1. 프로그래밍 언어를 선택하세요
-            2. 관련 질문을 입력하세요
-            3. 관련된 스택오버플로우 답변들을 검색합니다
-            4. AI가 종합적인 답변을 제공합니다
-            """
-        )
+    with tab1:
+        st.title("프로그래밍 Q&A 챗봇 🤖")
 
-        # 언어 선택
-        language = st.selectbox(
-            "프로그래밍 언어를 선택하세요:", ["c#", "javascript", "java"]
-        )
-
-    # 사용자 입력
-    user_question = st.text_input(
-        f"{language} 관련 질문을 입력하세요:",
-        placeholder=f"예: {language}에서 문자열을 다루는 방법은?",
-    )
-
-    if user_question:
-        with st.spinner("답변을 찾는 중..."):
-            similar_results, llm_response = process_question(
-                user_question, language, vector_stores, llm_chain
+        # 사이드바에 설명 추가
+        with st.sidebar:
+            st.markdown(
+                """
+                ### 사용 방법
+                1. 프로그래밍 언어를 선택하세요
+                2. 관련 질문을 입력하세요
+                3. 관련된 스택오버플로우 답변들을 검색합니다
+                4. AI가 종합적인 답변을 제공합니다
+                """
             )
-            display_results(user_question, similar_results, llm_response)
+
+            # 언어 선택
+            language = st.selectbox(
+                "프로그래밍 언어를 선택하세요:", ["c#", "javascript", "java"]
+            )
+
+        # 사용자 입력
+        user_question = st.text_input(
+            f"{language} 관련 질문을 입력하세요:",
+            placeholder=f"예: {language}에서 문자열을 다루는 방법은?",
+        )
+
+        if user_question:
+            with st.spinner("답변을 찾는 중..."):
+                similar_results, llm_response = process_question(
+                    user_question, language, vector_stores, llm_chain
+                )
+                display_results(user_question, similar_results, llm_response)
+
+    with tab2:
+        st.title("시스템 평가 📊")
+        if st.button("시스템 평가 실행"):
+            with st.spinner("시스템 성능을 평가하는 중..."):
+                # 테스트 데이터 준비
+                test_questions = [
+                    "C#에서 문자열을 다루는 방법은?",
+                    "LINQ란 무엇인가요?",
+                    "async/await의 사용법은?",
+                ]
+
+                # 각 질문에 대한 답변과 컨텍스트 수집
+                test_answers = []
+                test_contexts = []
+
+                for question in test_questions:
+                    similar_results, llm_response = process_question(
+                        question, "c#", vector_stores, llm_chain
+                    )
+                    test_answers.append(llm_response)
+                    test_contexts.append([r["answer"] for r in similar_results])
+
+                # 평가 실행
+                eval_results = evaluator.evaluate_qa_system(
+                    test_questions, test_answers, test_contexts
+                )
+
+                # 평가 보고서 표시
+                st.markdown(evaluator.generate_evaluation_report(eval_results))
 
 
 if __name__ == "__main__":

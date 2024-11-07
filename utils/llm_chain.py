@@ -1,7 +1,9 @@
 from typing import Dict, List
 
+from langchain.callbacks import LangChainTracer
 from langchain.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+from langsmith import Client
 
 
 class LLMChain:
@@ -12,7 +14,21 @@ class LLMChain:
         Args:
             model: 사용할 OpenAI 모델명
         """
-        self.llm = ChatOpenAI(model=model)
+        # Langsmith 트레이서 설정 - 예외 처리 추가
+        try:
+            tracer = LangChainTracer(project_name="stackoverflow_qa_project")
+            callbacks = [tracer]
+        except Exception as e:
+            print(f"Langsmith 트레이서 초기화 실패: {str(e)}")
+            callbacks = []
+
+        self.llm = ChatOpenAI(
+            model=model,
+            callbacks=callbacks,
+            tags=["stackoverflow_qa"],
+            metadata={"model": model, "type": "qa_system"},
+        )
+
         self.prompts = {
             "c#": """
             You are a C# expert. Please provide clear and practical answers to the following questions.
@@ -71,23 +87,25 @@ class LLMChain:
         Returns:
             LLM이 생성한 답변
         """
-        # 컨텍스트 생성
-        context = "\n\n".join(
-            [
-                f"질문: {result['question']}\n답변: {result['answer']}"
-                for result in similar_results
-            ]
-        )
-
-        # 언어별 프롬프트 선택
-        prompt = ChatPromptTemplate.from_template(self.prompts[language])
-
-        # 프롬프트 생성 및 LLM 호출
-        chain = prompt | self.llm
-
         try:
+            # 컨텍스트 생성
+            context = "\n\n".join(
+                [
+                    f"질문: {result['question']}\n답변: {result['answer']}"
+                    for result in similar_results
+                ]
+            )
+
+            # 언어별 프롬프트 선택
+            prompt = ChatPromptTemplate.from_template(self.prompts[language])
+
+            # 프롬프트 생성 및 LLM 호출
+            chain = prompt | self.llm
+
             response = chain.invoke({"question": question, "context": context})
+
             return response.content
+
         except Exception as e:
             print(f"LLM 응답 생성 중 오류 발생: {str(e)}")
             return "죄송합니다. 응답을 생성하는 중에 오류가 발생했습니다."
