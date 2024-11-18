@@ -53,20 +53,22 @@ class VectorStore:
             query: 사용자 질문
             k: 반환할 결과 수
         Returns:
-            유사 질문, 답변, 링크를 포함한 결과 리스트
+            유사 질문, 답변, 링크, 유사도 점수를 포함한 결과 리스트
         """
         if not self.vectorstore:
             raise ValueError("Vector store가 초기화되지 않았습니다.")
 
-        docs = self.vectorstore.similarity_search(query, k=k)
+        # 유사도 검색 수행
+        docs_with_scores = self.vectorstore.similarity_search_with_score(query, k=k)
         results = []
 
-        for doc in docs:
+        for doc, score in docs_with_scores:
             results.append(
                 {
                     "question": doc.metadata["question_title"],
                     "answer": doc.metadata["clean_answer"],
                     "link": doc.metadata["question_link"],
+                    "similarity_score": score,  # 유사도 점수 추가
                 }
             )
 

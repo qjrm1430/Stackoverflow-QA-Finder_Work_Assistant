@@ -73,6 +73,17 @@ def display_results(user_question: str, similar_results: List[Dict], llm_answer:
             st.write(f"**답변:** {result['answer']}")
             st.write(f"**원본 링크:** [스택오버플로우에서 보기]({result['link']})")
 
+            # 유사도 점수에 따라 수준 결정
+            similarity_score = result["similarity_score"]
+            if similarity_score < 0.45:
+                level = "높음"
+            elif 0.45 <= similarity_score < 0.65:
+                level = "중간"
+            else:
+                level = "낮음"
+
+            st.write(f"**유사도 : {level}")  # 유사도 점수와 수준 표시
+
     st.write("### 💡 AI 답변")
     st.write(llm_answer)
 

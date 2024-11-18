@@ -130,6 +130,6 @@ class QAEvaluator:
         for metric, score in metrics.items():
             report += f"## {metric}\n"
             report += f"- 설명: {descriptions[metric]}\n"
-            report += f"- 점수: {score:.2f}/1.00\n\n"
+            report += f"- 점수: {score:.2f}/1.00\n"
 
         return report
