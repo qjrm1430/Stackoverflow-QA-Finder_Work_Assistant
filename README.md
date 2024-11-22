@@ -70,7 +70,7 @@
 - 원래는 검색된 청크를 재정렬하고 Top-K 가장 관련성 높은 청크를 식별하여 LLM에 사용할 컨텍스트로 제공한다.
 - 해당 프로젝트에서는 청크가 아닌 여러개의 질문(청크)을 뽑은 후 가장 유사도가 높은 질문 순으로 식별하여 LLM에게 컨텍스트로 제공한다.
 
-## Re-Traing (Hidden Multi-Turn)
+## Re-Training (Hidden Multi-Turn)
 ![image](https://github.com/user-attachments/assets/c4b67128-a9bc-47cb-94f2-c08d75029811)
 - RAG 평가지표를 바탕으로 프롬프트를 증강시키는 방식을 고려
 - 일부 결과에서 성능 개선이 이루어지는 것을 일부 확인
