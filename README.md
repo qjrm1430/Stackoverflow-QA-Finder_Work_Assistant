@@ -49,11 +49,9 @@
 - 검증 평가를 프롬프트에 추가시키면 성능 개선이 보여짐
 ![image](https://github.com/user-attachments/assets/7491ee5a-e64d-48e4-98d2-2cccd6ec4197)
 
-
-### 결과
-
 ## 파이프라인
-![stack drawio](https://github.com/user-attachments/assets/c131ae91-aba5-41f0-a01f-7b5534ac6a0a)
+![image](https://github.com/user-attachments/assets/a5ffc38c-5758-418a-a4e5-790bfd6f8326)
+
 
 ## What-Technologies-were-used
 ![image](https://github.com/user-attachments/assets/f859e839-c8f7-41ad-b852-dcfaa1517cb9)
